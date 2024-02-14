@@ -78,9 +78,47 @@
 			button.title = 'Download VS test playlist';
 			button.className = 'Button Button_size_tiny Button_style_default Button_shape_round ';
 			button.innerHTML = '<svg class="Icon Icon_size_small Button__icon Button__icon_size_tiny" viewBox="0 0 32 32" name=""><use xlink:href="#list-dropdown"></use></svg>';
-	
+			button.onclick = generateVSPlaylist;
+
 			launchButtonsContainer.prepend(button);
 		}
+	}
+
+	function asyncRequest(url) {
+		return new Promise(function (resolve, reject) {
+			let xhr = new XMLHttpRequest();
+			xhr.open('GET', url);
+			xhr.onload = function () {
+				if (this.status >= 200 && this.status < 300) {
+					resolve(JSON.parse(xhr.response));
+				} else {
+					reject({ status: this.status, statusText: xhr.statusText });
+				}
+			};
+			xhr.onerror = () => reject({ status: this.status, statusText: xhr.statusText });
+			xhr.send();
+		});
+	}
+
+	async function generateVSPlaylist() {
+		const launchIdRegexp = /\/launch\/(\d+)/;
+		const locationMatch = location.pathname.match(launchIdRegexp);
+		const launchId = locationMatch[1];
+
+		const unresolvedTestsData = await asyncRequest(`${location.origin}/api/rs/launch/${launchId}/unresolved?page=0&size=500`);
+		const unresolvedTestIds = unresolvedTestsData.content.map((test) => test.id);
+		const testFullNames = [];
+
+		for (let i = 0; i < unresolvedTestIds.length; i++) {
+			const unresolvedTestData = await asyncRequest(`${location.origin}/api/rs/testresult/${unresolvedTestIds[i]}`);
+			testFullNames.push(unresolvedTestData.fullName);
+		}
+
+		const playlistData = '<Playlist Version="1.0">\n' + testFullNames.map((test) => `<Add Test="${test.replace(/"/g, '&quot;')}"/>\n`).join('')  + '</Playlist>';
+		const link = document.createElement('a');
+		link.href = 'data:application/xspf+xml;charset=utf-8,' + escape(playlistData);
+		link.download = "failed_tests.playlist";
+		link.click();
 	}
 
 	if (await waitCondition(isAllurePageLoaded)) {
