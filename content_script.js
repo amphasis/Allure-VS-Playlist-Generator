@@ -13,27 +13,20 @@
 		return null !== findByXPath(launchesBreadcrumb);
 	}
 
-	function repeatWhile(condition, callback, interval) {
+	function repeatUntil(callback, interval) {
 		return new Promise((resolve, reject) => {
-			if (!condition()) {
-				resolve();
+			if (callback()) {
 				return;
 			}
 
-			callback();
-			interval ??= 1000;
-
 			const subscription = window.setInterval(
 				() => {
-					if (condition()) {
-						callback();
-						return;
+					if (callback()) {
+						window.clearInterval(subscription);
+						resolve();
 					}
-
-					window.clearInterval(subscription);
-					resolve();
 				},
-				interval);
+				interval ?? 1000);
 		});
 	}
 
@@ -82,9 +75,21 @@
 	if (await waitCondition(isAllurePageLoaded)) {
 		console.log('Allure extension loaded');
 
+		const allurePageMaxUnloadedCount = 5;
+		var allurePageUnloadedCount = 0;
 		var wasLaunchPageLoaded = false;
 
-		await repeatWhile(isAllurePageLoaded, () => {
+		await repeatUntil(() => {
+			if (isAllurePageLoaded()) {
+				allurePageUnloadedCount = 0;
+			} else {
+				allurePageUnloadedCount++;
+				
+				if (allurePageUnloadedCount >= allurePageMaxUnloadedCount) {
+					return true;
+				}
+			}
+		
 			if (isLaunchPageLoaded() == wasLaunchPageLoaded) {
 				return;
 			}
