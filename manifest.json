@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Allure VS Playlist Generator",
   "description": "Allows to download a VS test playlist containing failed tests from Allure",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "icons": {
     "64": "icons/icon.png"
   },

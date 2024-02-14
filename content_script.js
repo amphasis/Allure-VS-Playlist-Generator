@@ -146,4 +146,3 @@
 		console.log('Allure extension unloaded')
 	}
 })();
-
