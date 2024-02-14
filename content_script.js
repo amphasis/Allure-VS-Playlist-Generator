@@ -1,4 +1,6 @@
 (async () => {
+	const downloadButtonId = '65cc5d095a58054d910b2b63';
+
 	function findByXPath(xpath) {
 		return document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue;
 	}
@@ -61,15 +63,24 @@
 			});
 	}
 
-	function tryInsertDownloadButton() {
+	function isDownloadButtonAdded() {
+		return null !== document.getElementById(downloadButtonId);
+	}
+
+	function addDownloadButton() {
 		const launchButtonsContainerXpath = '//div[@class="LaunchHeader"]/div[@class="Gapped Gapped_small Gapped_align_center "]';
 		const launchButtonsContainer = findByXPath(launchButtonsContainerXpath);
 
-		if (launchButtonsContainer === null) {
-			return false;
+		if (launchButtonsContainer !== null) {
+			const button = document.createElement('button');
+			button.id = downloadButtonId;
+			button.type = 'button';
+			button.title = 'Download VS test playlist';
+			button.className = 'Button Button_size_tiny Button_style_default Button_shape_round ';
+			button.innerHTML = '<svg class="Icon Icon_size_small Button__icon Button__icon_size_tiny" viewBox="0 0 32 32" name=""><use xlink:href="#list-dropdown"></use></svg>';
+	
+			launchButtonsContainer.prepend(button);
 		}
-
-		// <button class="Button Button_size_small Button_style_default Button_shape_round " type="button"><svg class="Icon Icon_size_small Button__icon Button__icon_size_small" viewBox="0 0 32 32" name=""><use xlink:href="#list-dropdown"></use></svg></button>
 	}
 
 	if (await waitCondition(isAllurePageLoaded)) {
@@ -77,27 +88,20 @@
 
 		const allurePageMaxUnloadedCount = 5;
 		var allurePageUnloadedCount = 0;
-		var wasLaunchPageLoaded = false;
 
 		await repeatUntil(() => {
 			if (isAllurePageLoaded()) {
 				allurePageUnloadedCount = 0;
 			} else {
 				allurePageUnloadedCount++;
-				
+
 				if (allurePageUnloadedCount >= allurePageMaxUnloadedCount) {
 					return true;
 				}
 			}
-		
-			if (isLaunchPageLoaded() == wasLaunchPageLoaded) {
-				return;
-			}
 
-			wasLaunchPageLoaded = !wasLaunchPageLoaded;
-
-			if (wasLaunchPageLoaded) {
-				console.log('Launch page loaded')
+			if (!isDownloadButtonAdded() && isLaunchPageLoaded()) {
+				addDownloadButton();
 			}
 		});
 
